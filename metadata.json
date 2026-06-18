@@ -1,0 +1,6 @@
+{
+  "name": "ระบบแจ้งซ่อมอุปกรณ์ในอาคาร",
+  "description": "ระบบลูกค้าแจ้งซ่อมอุปกรณ์ในอาคาร ที่มีพอร์ทัลตรวจสอบคิวงานได้แบบเรียลไทม์ มีแดชบอร์ดสรุปยอดสถิติ มอบหมายงานช่าง และแจ้งเตือนลูกค้าด้วย Chime sound และ Floating Alert ทันทีที่ซ่อมเสร็จเรียบร้อย",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
