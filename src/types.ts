@@ -21,6 +21,8 @@ export interface RepairRequest {
   status: StatusType;
   cost: number; // cost of parts/repair
   updatedAt: string;
+  targetDate?: string;
+  rootCause?: string;
 }
 
 export interface Equipment {

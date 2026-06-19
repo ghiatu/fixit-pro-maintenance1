@@ -5,17 +5,26 @@
 
 import React, { useState, useEffect } from 'react';
 import { Send, Image, Trash2, CheckCircle2, ChevronDown, RefreshCw } from 'lucide-react';
-import { RepairRequest, PriorityType } from '../types';
-import { DEPARTMENTS, CATEGORIES, EQUIPMENT_LIST } from '../data/mockData';
+import { RepairRequest, PriorityType, Department, Equipment } from '../types';
+import { DEPARTMENTS as MOCK_DEPARTMENTS, CATEGORIES as MOCK_CATEGORIES, EQUIPMENT_LIST as MOCK_EQUIPMENT_LIST } from '../data/mockData';
 
 interface NewRequestFormProps {
   onSubmit: (request: Partial<RepairRequest>) => void;
   onCancel: () => void;
+  departments?: Department[];
+  categories?: string[];
+  equipmentList?: Equipment[];
 }
 
-export default function NewRequestForm({ onSubmit, onCancel }: NewRequestFormProps) {
+export default function NewRequestForm({ 
+  onSubmit, 
+  onCancel,
+  departments = MOCK_DEPARTMENTS,
+  categories = MOCK_CATEGORIES,
+  equipmentList = MOCK_EQUIPMENT_LIST
+}: NewRequestFormProps) {
   const [reporterName, setReporterName] = useState('');
-  const [department, setDepartment] = useState('ฝ่ายไอที');
+  const [department, setDepartment] = useState(departments[0]?.name || 'ฝ่ายไอที');
   const [selectedCategory, setSelectedCategory] = useState('-- ทั้งหมด --');
   const [equipmentName, setEquipmentName] = useState('-- เลือกอุปกรณ์ --');
   const [priority, setPriority] = useState<PriorityType>('medium');
@@ -28,8 +37,8 @@ export default function NewRequestForm({ onSubmit, onCancel }: NewRequestFormPro
 
   // Dynamic equipment catalog filtered by category
   const filteredEquipment = selectedCategory === '-- ทั้งหมด --'
-    ? EQUIPMENT_LIST
-    : EQUIPMENT_LIST.filter(eq => eq.category === selectedCategory);
+    ? equipmentList
+    : equipmentList.filter(eq => eq.category === selectedCategory);
 
   // Auto reset selected equipment if category changes and currently selected equipment isn't in new category
   useEffect(() => {
@@ -39,7 +48,7 @@ export default function NewRequestForm({ onSubmit, onCancel }: NewRequestFormPro
         setEquipmentName('-- เลือกอุปกรณ์ --');
       }
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, filteredEquipment]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -88,7 +97,7 @@ export default function NewRequestForm({ onSubmit, onCancel }: NewRequestFormPro
     const newRequest: Partial<RepairRequest> = {
       reporterName,
       department,
-      category: selectedCategory === '-- ทั้งหมด --' ? (EQUIPMENT_LIST.find(e => e.name === equipmentName)?.category || 'ทั่วไป') : selectedCategory,
+      category: selectedCategory === '-- ทั้งหมด --' ? (equipmentList.find(e => e.name === equipmentName)?.category || 'ทั่วไป') : selectedCategory,
       equipmentName,
       priority,
       description,
@@ -138,7 +147,7 @@ export default function NewRequestForm({ onSubmit, onCancel }: NewRequestFormPro
                 onChange={(e) => setDepartment(e.target.value)}
                 className="w-full px-4 py-3 pr-10 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white appearance-none transition-all"
               >
-                {DEPARTMENTS.map(dept => (
+                {departments.map(dept => (
                   <option key={dept.id} value={dept.name}>
                     {dept.name}
                   </option>
@@ -160,7 +169,7 @@ export default function NewRequestForm({ onSubmit, onCancel }: NewRequestFormPro
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full px-4 py-3 pr-10 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none transition-all"
             >
-              {CATEGORIES.map(cat => (
+              {categories.map(cat => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>

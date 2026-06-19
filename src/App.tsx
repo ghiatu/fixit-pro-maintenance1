@@ -31,14 +31,15 @@ import {
   Zap,
   Info
 } from 'lucide-react';
-import { RepairRequest, StatusType, PriorityType, Equipment, SparePart } from './types';
-import { INITIAL_REPAIR_REQUESTS, EQUIPMENT_LIST, SPARE_PARTS } from './data/mockData';
+import { RepairRequest, StatusType, PriorityType, Equipment, SparePart, Department } from './types';
+import { INITIAL_REPAIR_REQUESTS, EQUIPMENT_LIST, SPARE_PARTS, DEPARTMENTS, CATEGORIES } from './data/mockData';
 import Dashboard from './components/Dashboard';
 import RequestTable from './components/RequestTable';
 import NewRequestForm from './components/NewRequestForm';
 import CustomerPortal from './components/CustomerPortal';
 import AdminLogin from './components/AdminLogin';
 import TechnicianPortal from './components/TechnicianPortal';
+import MasterDataManagement from './components/MasterDataManagement';
 
 interface FloatingNotification {
   id: string;
@@ -51,9 +52,48 @@ export default function App() {
   // Global States
   const [requests, setRequests] = useState<RepairRequest[]>([]);
   const [activePortal, setActivePortal] = useState<'customer' | 'admin' | 'technician'>('customer');
-  const [activeAdminMenu, setActiveAdminMenu] = useState<'dashboard' | 'requests' | 'new_request' | 'equipment' | 'parts' | 'line_notify'>('dashboard');
+  const [activeAdminMenu, setActiveAdminMenu] = useState<'dashboard' | 'requests' | 'new_request' | 'equipment' | 'parts' | 'line_notify'>('new_request');
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const [departments, setDepartments] = useState<Department[]>(() => {
+    const stored = localStorage.getItem('building_departments');
+    if (stored) {
+      try { return JSON.parse(stored); } catch (e) { return DEPARTMENTS; }
+    }
+    return DEPARTMENTS;
+  });
+
+  const [categories, setCategories] = useState<string[]>(() => {
+    const stored = localStorage.getItem('building_categories');
+    if (stored) {
+      try { return JSON.parse(stored); } catch (e) { return CATEGORIES; }
+    }
+    return CATEGORIES;
+  });
+
+  const [equipmentList, setEquipmentList] = useState<Equipment[]>(() => {
+    const stored = localStorage.getItem('building_equipment_list');
+    if (stored) {
+      try { return JSON.parse(stored); } catch (e) { return EQUIPMENT_LIST; }
+    }
+    return EQUIPMENT_LIST;
+  });
+
+  const saveDepartments = (list: Department[]) => {
+    setDepartments(list);
+    localStorage.setItem('building_departments', JSON.stringify(list));
+  };
+
+  const saveCategories = (list: string[]) => {
+    setCategories(list);
+    localStorage.setItem('building_categories', JSON.stringify(list));
+  };
+
+  const saveEquipmentList = (list: Equipment[]) => {
+    setEquipmentList(list);
+    localStorage.setItem('building_equipment_list', JSON.stringify(list));
+  };
 
   // Floating Notifications state
   const [notifications, setNotifications] = useState<FloatingNotification[]>([]);
@@ -469,6 +509,9 @@ export default function App() {
               {/* Active content conditional */}
               {activeAdminMenu === 'new_request' ? (
                 <NewRequestForm 
+                  departments={departments}
+                  categories={categories}
+                  equipmentList={equipmentList}
                   onSubmit={(newRequest) => {
                     handleAddNewRequest(newRequest);
                     // Automatically redirect to check status page after submit
@@ -565,6 +608,9 @@ export default function App() {
 
                   {activeAdminMenu === 'new_request' && (
                     <NewRequestForm 
+                      departments={departments}
+                      categories={categories}
+                      equipmentList={equipmentList}
                       onSubmit={(newFields) => {
                         handleAddNewRequest(newFields);
                         setActiveAdminMenu('requests');
@@ -575,51 +621,17 @@ export default function App() {
                     />
                   )}
 
-                  {/* MASTER TAB: EQUIPMENT LIST */}
+                  {/* MASTER TAB: EQUIPMENT LIST (MASTER DATA MANAGEMENT HUB) */}
                   {activeAdminMenu === 'equipment' && (
-                    <div className="bg-white rounded-2xl border border-gray-150 p-6 space-y-4 shadow-xs">
-                      <div className="flex justify-between items-center bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 text-xs">
-                        <p className="font-semibold text-indigo-800">ℹ️ คุณสมบัติอุปกรณ์ทั้งหมดถูกเก็บไว้ในทะเบียนทรัพย์สินอาคาร เพื่อความแม่นยำในการคิวป้ายส่งซ่อม</p>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                          <thead>
-                            <tr className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase">
-                              <th className="p-3">รหัสอุปกรณ์</th>
-                              <th className="p-3">ชื่อทรัพย์สิน</th>
-                              <th className="p-3">หมวดประเภท</th>
-                              <th className="p-3 text-center">สถานะปัจจุบัน</th>
-                              <th className="p-3">ตรวจสอบล่าสุด</th>
-                              <th className="p-3 text-center">แก้ไขข้อมูล</th>
-                            </tr>
-                          </thead>
-                          <tbody className="text-sm divide-y divide-gray-150">
-                            {EQUIPMENT_LIST.map(eq => (
-                              <tr key={eq.id} className="hover:bg-gray-50/20">
-                                <td className="p-3 font-mono font-bold text-gray-500">{eq.id}</td>
-                                <td className="p-3 font-semibold text-gray-800">{eq.name}</td>
-                                <td className="p-3 text-gray-500">{eq.category}</td>
-                                <td className="p-3 text-center">
-                                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                                    eq.status === 'active' ? 'bg-emerald-100 text-emerald-800' :
-                                    eq.status === 'repairing' ? 'bg-purple-100 text-purple-800' : 'bg-red-100 text-red-800'
-                                  }`}>
-                                    {eq.status === 'active' ? 'พร้อมใช้งาน' :
-                                     eq.status === 'repairing' ? 'อยู่ระหว่างซ่อมแซม' : 'ขัดข้องชำรุด'}
-                                  </span>
-                                </td>
-                                <td className="p-3 text-xs text-gray-400">{eq.lastChecked}</td>
-                                <td className="p-3 text-center">
-                                  <button onClick={() => handleToggleEquipmentStatus(eq.id)} className="text-indigo-600 font-semibold text-xs hover:underline cursor-pointer">
-                                    กดบันทึกเช็คสภาพ 📝
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                    <MasterDataManagement
+                      departments={departments}
+                      onSaveDepartments={saveDepartments}
+                      categories={categories}
+                      onSaveCategories={saveCategories}
+                      equipmentList={equipmentList}
+                      onSaveEquipment={saveEquipmentList}
+                      pushNotification={pushNotification}
+                    />
                   )}
 
                   {/* MASTER TAB: SPARE PARTS */}

@@ -49,6 +49,7 @@ export default function TechnicianPortal({ requests, onUpdateWork, pushNotificat
   const [selectedPart, setSelectedPart] = useState('');
   const [partsQty, setPartsQty] = useState(1);
   const [usedPartsLog, setUsedPartsLog] = useState<{ name: string; qty: number; price: number }[]>([]);
+  const [rootCause, setRootCause] = useState('');
 
   // Filter requests
   const filteredRequests = requests.filter(req => {
@@ -84,6 +85,7 @@ export default function TechnicianPortal({ requests, onUpdateWork, pushNotificat
     setTechNotes(req.additionalNotes || '');
     setUsedPartsLog([]);
     setSelectedPart('');
+    setRootCause(req.rootCause || '');
   };
 
   // Add spare parts cost dynamically
@@ -113,6 +115,7 @@ export default function TechnicianPortal({ requests, onUpdateWork, pushNotificat
       status: currentStatus,
       cost: repairCost,
       additionalNotes: finalNotes,
+      rootCause: rootCause.trim(),
       updatedAt: new Date().toISOString().slice(0, 10) + ' ' + new Date().toTimeString().slice(0, 5)
     };
 
@@ -268,6 +271,112 @@ export default function TechnicianPortal({ requests, onUpdateWork, pushNotificat
             </div>
           </div>
         </div>
+      </div>
+
+      {/* SLA & WORK STATUS BREAKDOWN FOR HEAD TECHNICIAN */}
+      <div className="bg-slate-900 text-white rounded-3xl p-6 border border-slate-850 shadow-xl space-y-6 animate-fade-in" id="tech-sla-dashboard">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h3 className="text-md font-bold text-white flex items-center gap-2">
+              📊 ศูนย์สรุปสถานะการซ่อมประจำวิศวกรรม (SLA & Status Analytics Desk)
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              ข้อมูลควบคุมความคล่องตัววิศวกรอาคารและการระบุซ่อมเกินวิกฤตเป้าหมายวัน (Target Date)
+            </p>
+          </div>
+          <div className="px-3 py-1 text-xs font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full">
+            สถานะเวลา: ปกติ ⚡
+          </div>
+        </div>
+
+        {/* 1. Status Breakdown Cards Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <div className="bg-slate-850 border border-slate-800 p-4.5 rounded-xl text-center space-y-1">
+            <span className="text-[10px] text-slate-400 font-bold block">🕒 รอรับเรื่อง</span>
+            <span className="text-indigo-400 text-lg font-black">{requests.filter(r => r.status === 'pending').length}</span>
+          </div>
+          <div className="bg-slate-850 border border-slate-800 p-4.5 rounded-xl text-center space-y-1">
+            <span className="text-[10px] text-slate-400 font-bold block">🔹 รับเรื่องแล้ว</span>
+            <span className="text-cyan-400 text-lg font-black">{requests.filter(r => r.status === 'received').length}</span>
+          </div>
+          <div className="bg-slate-850 border border-slate-800 p-4.5 rounded-xl text-center space-y-1">
+            <span className="text-[10px] text-slate-400 font-bold block">⚙️ กำลังซ่อม</span>
+            <span className="text-purple-400 text-lg font-black">{requests.filter(r => r.status === 'in_progress').length}</span>
+          </div>
+          <div className="bg-slate-850 border border-slate-800 p-4.5 rounded-xl text-center space-y-1">
+            <span className="text-[10px] text-slate-400 font-bold block">📦 รออะไหล่</span>
+            <span className="text-amber-400 text-lg font-black">{requests.filter(r => r.status === 'waiting_parts').length}</span>
+          </div>
+          <div className="bg-slate-850 border border-slate-800 p-4.5 rounded-xl text-center space-y-1">
+            <span className="text-[10px] text-slate-400 font-bold block">✅ เสร็จสิ้น</span>
+            <span className="text-emerald-400 text-lg font-black">{requests.filter(r => r.status === 'completed').length}</span>
+          </div>
+          <div className="bg-slate-850 border border-slate-800 p-4.5 rounded-xl text-center space-y-1">
+            <span className="text-[10px] text-slate-400 font-bold block">🔴 เกินเป้าหมาย (Overdue)</span>
+            <span className="text-rose-400 text-lg font-black">
+              {requests.filter(r => {
+                if (!r.targetDate || r.status === 'completed' || r.status === 'cancelled') return false;
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const target = new Date(r.targetDate);
+                target.setHours(0,0,0,0);
+                return target < today;
+              }).length}
+            </span>
+          </div>
+        </div>
+
+        {/* 2. Overdue Warning List in technician style */}
+        {requests.filter(r => {
+          if (!r.targetDate || r.status === 'completed' || r.status === 'cancelled') return false;
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          const target = new Date(r.targetDate);
+          target.setHours(0,0,0,0);
+          return target < today;
+        }).length > 0 ? (
+          <div className="bg-rose-950/20 border border-rose-900/50 rounded-2xl p-4.5 space-y-3">
+            <div className="flex items-center gap-2 text-rose-405 text-rose-400 text-xs font-bold uppercase tracking-wide">
+              <AlertCircle className="w-4.5 h-4.5 text-rose-500 animate-pulse" />
+              แจ้งเตือนด่วน: รายการใบงานล่าช้ากว่าแผนเป้าหมายกำหนด (Urgent SLA Breaches)
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {requests.filter(r => {
+                if (!r.targetDate || r.status === 'completed' || r.status === 'cancelled') return false;
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const target = new Date(r.targetDate);
+                target.setHours(0,0,0,0);
+                return target < today;
+              }).map(r => (
+                <div 
+                  key={r.id} 
+                  onClick={() => handleSelectRequest(r)}
+                  className="bg-slate-900/80 border border-rose-950 p-3.5 rounded-xl hover:border-rose-700/50 transition-colors cursor-pointer text-left space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono font-bold text-slate-400">{r.id}</span>
+                    <span className="text-[10px] font-bold text-red-400 bg-red-400/10 px-2 py-0.5 rounded">
+                      เลยกำหนดเมื่อ: {r.targetDate}
+                    </span>
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-white line-clamp-1">{r.equipmentName}</h5>
+                    <p className="text-[11px] text-slate-400 line-clamp-2 mt-1">{r.description}</p>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-405 text-slate-400 pt-1.5 border-t border-slate-850">
+                    <span>ผู้แจ้ง: {r.reporterName}</span>
+                    <span className="font-bold text-yellow-500">ช่าง: {r.assignedMechanic}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-emerald-950/20 border border-emerald-900/40 p-4 rounded-xl text-center text-xs text-emerald-450 font-semibold">
+            🎉 ยอดเยี่ยม! ทุกใบงานกำลังดำเนินงานภายใต้กรอบเวลาเป้าหมายซ่อมบำรุง ไม่มีงานลัดวงจร SLA ล่าช้า
+          </div>
+        )}
       </div>
 
       {/* Grid Dashboard */}
@@ -568,6 +677,38 @@ export default function TechnicianPortal({ requests, onUpdateWork, pushNotificat
                     onChange={(e) => setRepairCost(Math.max(0, parseFloat(e.target.value) || 0))}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500 text-left"
                   />
+                </div>
+
+                {/* 4.5. Root Cause selection & entry */}
+                <div className="space-y-1.5 p-3 bg-amber-50/10 border border-amber-200/50 rounded-xl">
+                  <label className="text-xs font-bold text-slate-705 flex items-center gap-1.5">
+                    <Tag className="w-4 h-4 text-amber-600" /> สาเหตุหลักของการชำรุด (Root Cause)
+                  </label>
+                  <div className="flex gap-1.5 flex-col">
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setRootCause(e.target.value);
+                        }
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                    >
+                      <option value="">-- เลือกสาเหตุอาการเพื่อบันทึกด่วน --</option>
+                      <option value="เสื่อมสภาพตามอายุใช้งานและขีดความร้อน">🔋 เสื่อมสภาพตามอายุใช้งานและขีดความร้อน</option>
+                      <option value="ไฟฟ้าตกหรือลัดวงจรเสียหายชั่วคราว">⚡ ไฟฟ้าตกหรือลัดวงจรเสียหายชั่วคราว</option>
+                      <option value="ไม่ได้ซ่อมบำรุงตามรอบรักษาความหนืด (PM)">🔧 ไม่ได้ซ่อมบำรุงตามรอบรักษาความหนืด (PM)</option>
+                      <option value="ระบบรวนหลังอัปเดตคลื่นสั่นสัญญาณ">📡 ระบบรวนหลังอัปเดตคลื่นสั่นสัญญาณ</option>
+                      <option value="ความชื้นหรืออุบัติเหตุจากไอระเหยฝุ่น">💧 ความชื้นหรืออุบัติเหตุจากไอระเหยฝุ่น</option>
+                      <option value="ชิ้นส่วนอุปกรณ์ภายในคดผิดรูปสึกหรอ">⚙️ ชิ้นส่วนอุปกรณ์ภายในคดผิดรูปสึกหรอ</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={rootCause}
+                      onChange={(e) => setRootCause(e.target.value)}
+                      placeholder="ระบุสาเหตุปัญหา หรือแก้ไขคำสลักสาเหตุที่นี่..."
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white text-gray-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
                 </div>
 
                 {/* 5. Technic note */}

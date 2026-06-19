@@ -144,6 +144,166 @@ export default function Dashboard({ requests }: DashboardProps) {
         </div>
       </div>
 
+      {/* SLA & REPAIR OVERDUE SUMMARY SECTION */}
+      <div className="bg-white rounded-2xl border border-gray-150 p-6 shadow-xs space-y-6" id="sla-summary-section">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+          <div>
+            <h3 className="text-md font-bold text-gray-900 font-sans flex items-center gap-2">
+              🕒 ระบบติดตามผลงานซ่อมตามแผน (SLA & Target Completion Monitoring)
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">
+              คำนวณจากความสอดคล้องระหว่าง วันเป้าหมายเสร็จสิ้น (Target Date) และสถานะปัจจุบันของใบงาน
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold px-3 py-1 bg-gray-100 text-gray-650 rounded-full">
+              วันนี้: {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          </div>
+        </div>
+
+        {/* SLA KPI Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/50 flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-rose-800 text-xs font-bold uppercase tracking-wide">⚠️ งานเกินเวลาซ่อม (Overdue SLA)</span>
+              <h4 className="text-3xl font-extrabold text-rose-600 font-sans">
+                {requests.filter(r => {
+                  if (!r.targetDate || r.status === 'completed' || r.status === 'cancelled') return false;
+                  const today = new Date();
+                  today.setHours(0,0,0,0);
+                  const target = new Date(r.targetDate);
+                  target.setHours(0,0,0,0);
+                  return target < today;
+                }).length} <span className="text-xs font-medium text-rose-500">ใบงาน</span>
+              </h4>
+            </div>
+            <div className="bg-rose-500 text-white p-2.5 rounded-lg">
+              <AlertTriangle className="w-5 h-5 animate-bounce" />
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/50 flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-indigo-800 text-xs font-bold uppercase tracking-wide">📅 กำหนดเป้าหมายแล้ว</span>
+              <h4 className="text-3xl font-extrabold text-indigo-700 font-sans">
+                {requests.filter(r => r.targetDate).length} <span className="text-xs font-medium text-indigo-500">ใบงาน</span>
+              </h4>
+            </div>
+            <div className="bg-indigo-600 text-white p-2.5 rounded-lg">
+              <Clock className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-emerald-800 text-xs font-bold uppercase tracking-wide">✅ ดำเนินการตามกำหนด</span>
+              <h4 className="text-3xl font-extrabold text-emerald-700 font-sans">
+                {requests.filter(r => {
+                  if (r.status === 'completed') return true;
+                  if (!r.targetDate) return false;
+                  const today = new Date();
+                  today.setHours(0,0,0,0);
+                  const target = new Date(r.targetDate);
+                  target.setHours(0,0,0,0);
+                  return target >= today;
+                }).length} <span className="text-xs font-medium text-emerald-500">ใบงาน</span>
+              </h4>
+            </div>
+            <div className="bg-emerald-500 text-white p-2.5 rounded-lg">
+              <CheckCircle className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Detailed Status Counts Table */}
+        <div className="bg-gray-50 border border-gray-150 p-4 rounded-xl">
+          <span className="text-xs font-bold text-gray-500 uppercase block mb-3">📋 สรุปรายการคำขอแบ่งตามทุกสถานะ (Repair Status Distribution)</span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-3xs text-center">
+              <span className="text-[11px] font-bold text-gray-400 block">🕒 รอรับเรื่อง</span>
+              <span className="text-lg font-extrabold text-indigo-600">{requests.filter(r => r.status === 'pending').length}</span>
+            </div>
+            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-3xs text-center">
+              <span className="text-[11px] font-bold text-cyan-550 block">🔹 รับเรื่องแล้ว</span>
+              <span className="text-lg font-extrabold text-cyan-600">{requests.filter(r => r.status === 'received').length}</span>
+            </div>
+            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-3xs text-center">
+              <span className="text-[11px] font-bold text-purple-400 block">⚙️ ดำเนินการ</span>
+              <span className="text-lg font-extrabold text-purple-600">{requests.filter(r => r.status === 'in_progress').length}</span>
+            </div>
+            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-3xs text-center">
+              <span className="text-[11px] font-bold text-amber-500 block">🚚 รออะไหล่</span>
+              <span className="text-lg font-extrabold text-amber-600">{requests.filter(r => r.status === 'waiting_parts').length}</span>
+            </div>
+            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-3xs text-center">
+              <span className="text-[11px] font-bold text-emerald-600 block">✅ เสร็จสิ้น</span>
+              <span className="text-lg font-extrabold text-emerald-600">{requests.filter(r => r.status === 'completed').length}</span>
+            </div>
+            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-3xs text-center">
+              <span className="text-[11px] font-bold text-red-500 block">🚫 ยกเลิกแล้ว</span>
+              <span className="text-lg font-extrabold text-red-500">{requests.filter(r => r.status === 'cancelled').length}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* List of Overdue Cases when they exist */}
+        {requests.filter(r => {
+          if (!r.targetDate || r.status === 'completed' || r.status === 'cancelled') return false;
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          const target = new Date(r.targetDate);
+          target.setHours(0,0,0,0);
+          return target < today;
+        }).length > 0 && (
+          <div className="border border-red-200 bg-red-50/30 rounded-xl p-4">
+            <span className="text-xs font-bold text-rose-700 flex items-center gap-1.5 mb-2">
+              <AlertTriangle className="w-4 h-4 text-rose-500 animate-pulse" />
+              รายชื่อใบงานด่วนที่ดำเนินการล่าช้า เกินเป้าหมายจำหน่ายงาน (Overdue Details)
+            </span>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-red-50/80 border-b border-red-100 text-rose-800 font-bold">
+                    <th className="p-2">รหัสใบงาน</th>
+                    <th className="p-2">ผู้แจ้ง / แผนก</th>
+                    <th className="p-2">รายละเอียดปัญหากลุ่มอุปกรณ์</th>
+                    <th className="p-2 text-center">เป้าหมาย (Target)</th>
+                    <th className="p-2 text-center">สถานะ</th>
+                    <th className="p-2">ช่างซ่อม</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-red-100">
+                  {requests.filter(r => {
+                    if (!r.targetDate || r.status === 'completed' || r.status === 'cancelled') return false;
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    const target = new Date(r.targetDate);
+                    target.setHours(0,0,0,0);
+                    return target < today;
+                  }).map(r => (
+                    <tr key={r.id} className="hover:bg-red-50/50">
+                      <td className="p-2 font-bold font-mono text-gray-700">{r.id}</td>
+                      <td className="p-2 font-medium text-gray-800">{r.reporterName} ({r.department})</td>
+                      <td className="p-2 text-gray-600 truncate max-w-[200px]">{r.equipmentName} - {r.description}</td>
+                      <td className="p-2 text-center font-bold text-red-600">{r.targetDate}</td>
+                      <td className="p-2 text-center">
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                          {r.status === 'pending' ? 'รอรับเรื่อง' :
+                           r.status === 'received' ? 'รับแล้ว' :
+                           r.status === 'in_progress' ? 'ก๊อกเเก๊กทำอยู่' : 'รออะไหล่'}
+                        </span>
+                      </td>
+                      <td className="p-2 font-semibold text-gray-700">{r.assignedMechanic}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Left: Bar chart (Monthly Stats) - occupies 3 cols */}
