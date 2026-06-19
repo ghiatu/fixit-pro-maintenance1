@@ -38,7 +38,7 @@ import RequestTable from './components/RequestTable';
 import NewRequestForm from './components/NewRequestForm';
 import CustomerPortal from './components/CustomerPortal';
 import AdminLogin from './components/AdminLogin';
-import LiveSimulator from './components/LiveSimulator';
+import TechnicianPortal from './components/TechnicianPortal';
 
 interface FloatingNotification {
   id: string;
@@ -50,11 +50,10 @@ interface FloatingNotification {
 export default function App() {
   // Global States
   const [requests, setRequests] = useState<RepairRequest[]>([]);
-  const [activePortal, setActivePortal] = useState<'customer' | 'admin'>('customer');
+  const [activePortal, setActivePortal] = useState<'customer' | 'admin' | 'technician'>('customer');
   const [activeAdminMenu, setActiveAdminMenu] = useState<'dashboard' | 'requests' | 'new_request' | 'equipment' | 'parts' | 'line_notify'>('dashboard');
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [simulatorOpen, setSimulatorOpen] = useState(true);
 
   // Floating Notifications state
   const [notifications, setNotifications] = useState<FloatingNotification[]>([]);
@@ -238,19 +237,6 @@ export default function App() {
 
         {/* Portal Switch Controls on header */}
         <div className="flex items-center gap-3">
-          {/* Sounds or Simulator Button Toggle */}
-          <button
-            onClick={() => setSimulatorOpen(!simulatorOpen)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              simulatorOpen 
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' 
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-250 border border-slate-200'
-            }`}
-          >
-            <Zap className={`w-3.5 h-3.5 ${simulatorOpen ? 'fill-white text-indigo-200' : ''}`} /> 
-            <span className="hidden sm:inline">จำลองงานช่าง</span>
-          </button>
-
           {/* Switch Tab */}
           <div className="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
             <button
@@ -261,10 +247,23 @@ export default function App() {
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activePortal === 'customer' 
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' 
-                  : 'text-slate-500 hover:text-slate-800'
+                  : 'text-slate-500 hover:text-slate-805 hover:text-slate-800'
               }`}
             >
-              พอร์ทัลลูกค้า
+              หน้าแจ้งซ่อม
+            </button>
+            <button
+              onClick={() => {
+                setActivePortal('technician');
+                setMobileMenuOpen(false);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activePortal === 'technician' 
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100' 
+                  : 'text-slate-500 hover:text-slate-808 hover:text-slate-800'
+              }`}
+            >
+              หน้างานช่าง 👨‍🔧
             </button>
             <button
               onClick={() => {
@@ -274,7 +273,7 @@ export default function App() {
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activePortal === 'admin' 
                   ? 'bg-slate-700 text-white shadow-xs' 
-                  : 'text-slate-500 hover:text-slate-800'
+                  : 'text-slate-500 hover:text-slate-805 hover:text-slate-800'
               }`}
             >
               แอดมิน 🔑
@@ -494,6 +493,15 @@ export default function App() {
                 />
               )}
             </div>
+          )}
+
+          {/* TECHNICIAN PORTAL VIEW */}
+          {activePortal === 'technician' && (
+            <TechnicianPortal 
+              requests={requests}
+              onUpdateWork={handleEditRequest}
+              pushNotification={pushNotification}
+            />
           )}
 
           {/* ADMIN PORTAL VIEW */}
@@ -747,23 +755,6 @@ export default function App() {
           </div>
         ))}
       </div>
-
-      {/* --- DYNAMIC LIVE SIMULATOR FOR CONVENIENT DEMO --- */}
-      <LiveSimulator 
-        requests={requests}
-        open={simulatorOpen}
-        onClose={() => setSimulatorOpen(false)}
-        onTriggerUpdate={(id, nextStatus, costValue) => {
-          const target = requests.find(r => r.id === id);
-          if (target) {
-            handleEditRequest({
-              ...target,
-              status: nextStatus,
-              cost: costValue !== undefined ? costValue : target.cost
-            });
-          }
-        }}
-      />
 
     </div>
   );
